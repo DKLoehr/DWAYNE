@@ -24,7 +24,22 @@ class RandomExpert(Expert):
         """
         Return a random move from the choices.
         """
-        return random.choice(history)
+        return random.choice(self.moves)
+
+class ConstantExpert(Expert):
+    """
+    An expert who always guesses the same move
+    """
+
+    def __init__(self, moves, move):
+        Expert.__init__(self, moves)
+        self.move = move
+
+    def predict(self, history):
+        """
+        Return the predetermined move
+        """
+        return self.move
 
 class KthLastMoveExpert(Expert):
     """
@@ -34,7 +49,7 @@ class KthLastMoveExpert(Expert):
     """
 
     def __init__(self, moves, k):
-        self.moves = moves
+        Expert.__init__(self, moves)
         self.k = k
 
     def predict(self, history):
@@ -45,7 +60,7 @@ class KthLastMoveExpert(Expert):
         if len(history) > self.k:
             return history[-self.k]
         else:
-            return random.choice(history)
+            return random.choice(self.moves)
 
 class WeightedLastMovesExpert(Expert):
     """
@@ -54,7 +69,7 @@ class WeightedLastMovesExpert(Expert):
     """
 
     def __init__(self, moves, weights):
-        self.moves = moves
+        Expert.__init__(self, moves)
         self.weights = weights
 
     def predict(self, history):
@@ -68,4 +83,4 @@ class WeightedLastMovesExpert(Expert):
         if len(history) > k:
             return random.choices(history[k:], weights=self.weights, k=1)[0]
         else:
-            return random.choice(history)
+            return random.choice(self.moves)
