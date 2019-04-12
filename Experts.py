@@ -7,20 +7,24 @@ class Expert(object):
     """
     def __init__(self, moves):
         self.moves = moves
+        self.history = []
 
-    def predict(self, history):
+    def predict(self):
         """
         Return a move prediction based on the history
         received by the expert.
         """
         raise NotImplementedError
 
+    def observeMove(self, move):
+        pass
+
 class RandomExpert(Expert):
     """
     An expert that picks moves entirely at random.
     """
 
-    def predict(self, history):
+    def predict(self):
         """
         Return a random move from the choices.
         """
@@ -35,7 +39,7 @@ class ConstantExpert(Expert):
         Expert.__init__(self, moves)
         self.move = move
 
-    def predict(self, history):
+    def predict(self):
         """
         Return the predetermined move
         """
@@ -52,15 +56,20 @@ class KthLastMoveExpert(Expert):
         Expert.__init__(self, moves)
         self.k = k
 
-    def predict(self, history):
+    def predict(self):
         """
         Return the k-th move from the end of the list.
         If the list is less than size k, pick randomly.
         """
-        if len(history) > self.k:
-            return history[-self.k]
-        else:
+        if len(self.history) <= self.k:
             return random.choice(self.moves)
+        else:
+            return self.history[0]
+
+    def observeMove(self, move):
+        self.history.append(move)
+        if len(self.history) > self.k + 1:
+            self.history = self.history[1:]
 
 class WeightedLastMovesExpert(Expert):
     """
@@ -72,7 +81,7 @@ class WeightedLastMovesExpert(Expert):
         Expert.__init__(self, moves)
         self.weights = weights
 
-    def predict(self, history):
+    def predict(self):
         """
         Return a randomly sampled move from the history
         as the prediction, weighing the last k moves
@@ -80,7 +89,12 @@ class WeightedLastMovesExpert(Expert):
         If the list is less than size k, pick randomly.
         """
         k = len(self.weights)
-        if len(history) > k:
-            return random.choices(history[k:], weights=self.weights, k=1)[0]
+        if len(self.history) > k:
+            return random.choices(self.history[k:], weights=self.weights, k=1)[0]
         else:
             return random.choice(self.moves)
+
+    def observeMove(self, move):
+        self.history.append(move)
+        if len(self.history) > len(self.weights):
+            self.history = self.history[1:]
