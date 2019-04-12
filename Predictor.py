@@ -1,5 +1,6 @@
 from Game import Game
 from Player import Player
+import Expert
 
 class DeterministicPlayer(Player):
     def __init__(self, game, beta, historySize, experts):
@@ -15,7 +16,7 @@ class DeterministicPlayer(Player):
         predictweights = {move : 0 for move in self.game.getMoves()}
         moveweights = {move : 0 for move in self.game.getMoves()}
         for (expert, weight) in self.weightedExperts:
-            predictweights[expert(self.history)] += weight
+            predictweights[expert.predict(self.history)] += weight
         for move1 in self.game.getMoves():
             for move2 in self.game.getMoves():
                 moveweights[move1] += predictweights[move2] * self.game.testMoves(move1, move2)
@@ -23,18 +24,17 @@ class DeterministicPlayer(Player):
 
     def observeMove(self, move):
         # Multiply weight by beta if the expert's prediction was wrong
-        self.weightedExperts = [(expert, weight * (self.beta ** (expert(self.history) != move)))
+        self.weightedExperts = [(expert, weight * (self.beta ** (expert.predict(self.history) != move)))
                                 for (expert, weight) in self.weightedExperts]
         self.history.append(move)
         if len(self.history) > self.historySize: self.history = self.history[1:]
-        print (self.history, self.weightedExperts)
 
 def main():
     RPSGame = Game()
     RPSGame.loadFromJson("Games/rps.json")
-    print(RPSGame)
-    print("rock beats scissors:" + str(RPSGame.testMoves("rock", "scissors")))
-    player = DeterministicPlayer(RPSGame, .5, 5, [lambda x : "rock", lambda x : "paper", lambda x : "scissors"])
+    historySize = 10
+    player = DeterministicPlayer(RPSGame, .5, historySize, \
+        [Expert.Expert(RPSGame.getMoves(), Expert.KthLastMoveStrategy(k)) for k in range(historySize)])
     while True:
         playerMove = raw_input("Make your move: ")
         if playerMove == "exit": return

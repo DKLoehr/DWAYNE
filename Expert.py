@@ -48,7 +48,7 @@ class KthLastMoveStrategy(Strategy):
         Return the k-th move from the end of the list.
         If the list is less than size k, pick randomly.
         """
-        if len(choices) > k:
+        if len(choices) > self.k:
             return choices[-self.k]
         else:
-            return random.choice(choices)
+            return random.choice(self.moves)
