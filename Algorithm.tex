@@ -31,7 +31,7 @@
 
 \renewcommand{\part}[1]{\hfill\\\textbf{(#1)}\ }
 
-\newcommand{\beats}{\ensuremath{>}}
+\newcommand{\beats}{\ensuremath{\gtrdot}}
 
 %Handy macro template
 %\newcommand{\whatever}{\ensuremath{...}\xspace}
@@ -53,13 +53,33 @@ We define an \emph{RPS-like game} to be a set $\mM$ of moves equipped with an ir
 		\For {$m \in \mM$}{ 
 			let $P_m = \sum_{i=1}^N w_i \cdot 1\{\xi_i = m\}$\; }
 		\For {$m \in \mM$}{ 
-			let $V_m = \sum_{m'\ \beats\ m}^N P_{m'} - \sum_{m\ \beats\ m'}^N P_{m'}$\; }
+			let $V_m = \sum_{m' \beats m} P_{m'} - \sum_{m \beats m'} P_{m'}$\; }
 		Play $\arg \max_m V_m$\;
 		Observe opponent's move $\hat m$\;
 		\For {$i = 1, \dots, N$}{ 
 			$w_i = w_i \cdot \beta ^ {1\{\xi_i \neq \hat m\}}$\; }
 	}
-	\caption{Version 1}
+	\caption{Deterministic}
+\end{algorithm}
+
+
+\begin{algorithm}[H]
+	\SetAlgoLined
+	\KwIn{RPS-like game $(\mM, \beats)$, $N$ predictions $\xi_i \in \mM$, $\beta \in (0, 1)$}
+	Give each expert a weight $w_i = 1$\;
+	\While{ True }{
+		\For {$m \in \mM$}{
+			let $P_m = \sum_{i=1}^N w_i \cdot 1\{\xi_i = m\}$\; }
+		\For {$m \in \mM$}{ 
+			let $V_m = \sum_{m' \beats m} P_{m'} - \sum_{m \beats m'} P_{m'}$\; }
+		let $Z = \sum_{m'}$\;
+		let $D$ be a probability distribution over $\mM$, such that $D(m) = \frac{V_m}{Z}$\;
+		play $m \twiddle D$\;
+		Observe opponent's move $\hat m$\;
+		\For {$i = 1, \dots, N$}{ 
+			$w_i = w_i \cdot \beta ^ {1\{\xi_i \neq \hat m\}}$\; }
+	}
+	\caption{Nondeterministic}
 \end{algorithm}
 
 \end{document}

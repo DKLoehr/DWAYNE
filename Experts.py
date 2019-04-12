@@ -88,11 +88,10 @@ class WeightedLastMovesExpert(Expert):
         using the given weights, where k = len(weights).
         If the list is less than size k, pick randomly.
         """
-        k = len(self.weights)
-        if len(self.history) > k:
-            return random.choices(self.history[k:], weights=self.weights, k=1)[0]
-        else:
+        if len(self.history) < len(self.weights):
             return random.choice(self.moves)
+        else:
+            return random.choices(self.history, weights=self.weights, k=1)[0]
 
     def observeMove(self, move):
         self.history.append(move)
