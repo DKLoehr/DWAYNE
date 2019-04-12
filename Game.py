@@ -10,6 +10,12 @@ class Game(object):
     def getMoves(self):
         return self.moves
 
+    # Return 1 if move1 beats move2, -1 if move2 beats move1, 0 otherwise
+    def testMoves (self, move1, move2):
+        if move1 not in self.moves: return
+        if move2 not in self.moves: return
+        return self.beats[(move1, move2)]
+
     def addMove(self, move):
         if move in self.moves: return
         if not re.match("^[a-zA-z0-9]+$", move):
@@ -84,7 +90,7 @@ class Game(object):
             self.addMove(move1)
             self.addMove(move2)
             self.beats[(move1, move2)] = beats
-            self.beats[(move1, move2)] = -beats
+            self.beats[(move2, move1)] = -beats
 
 def main():
     G = Game()
