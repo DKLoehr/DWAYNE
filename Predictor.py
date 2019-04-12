@@ -26,19 +26,29 @@ class DeterministicPlayer(Player):
         # Multiply weight by beta if the expert's prediction was wrong
         self.weightedExperts = [(expert, weight * (self.beta ** (expert.predict(self.history) != move)))
                                 for (expert, weight) in self.weightedExperts]
+
+        # Normalize weights so max weight is 1, to prevent us from getting
+        # extremely small weights (unless an expert is terrible compared to the best)
+        (_, maxweight) = max(self.weightedExperts, key = lambda (expert, weight) : weight)
+        self.weightedExperts = [(expert, weight/maxweight) for (expert, weight) in self.weightedExperts]
+
         self.history.append(move)
         if len(self.history) > self.historySize: self.history = self.history[1:]
 
 def main():
     RPSGame = Game()
     RPSGame.loadFromJson("Games/rps.json")
-    historySize = 10
+    historySize = 5
+    #player = DeterministicPlayer(RPSGame, .5, historySize, \
+    #    [Expert.KthLastMoveExpert(RPSGame.getMoves(), k) for k in range(historySize)])
     player = DeterministicPlayer(RPSGame, .5, historySize, \
-        [Expert.KthLastMoveExpert(RPSGame.getMoves(), k) for k in range(historySize)])
+        [Expert.ConstantExpert(RPSGame.getMoves(), move) for move in RPSGame.getMoves()])
     while True:
         playerMove = raw_input("Make your move: ")
         if playerMove == "exit": return
-        print(playerMove)
+        if playerMove not in RPSGame.getMoves():
+            print("Invalid move: " + playerMove)
+            continue
         pythonMove = player.makeMove()
         successStr = "I win!" if RPSGame.testMoves(pythonMove, playerMove) == 1 \
                     else "You win!" if RPSGame.testMoves(pythonMove, playerMove) == -1 \
