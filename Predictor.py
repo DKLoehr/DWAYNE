@@ -34,7 +34,7 @@ def main():
     RPSGame.loadFromJson("Games/rps.json")
     historySize = 10
     player = DeterministicPlayer(RPSGame, .5, historySize, \
-        [Expert.Expert(RPSGame.getMoves(), Expert.KthLastMoveStrategy(k)) for k in range(historySize)])
+        [Expert.KthLastMoveExpert(RPSGame.getMoves(), k) for k in range(historySize)])
     while True:
         playerMove = raw_input("Make your move: ")
         if playerMove == "exit": return

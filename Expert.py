@@ -45,7 +45,7 @@ class KthLastMoveExpert(Expert):
         if len(history) > self.k:
             return history[-self.k]
         else:
-            return random.choice(history)
+            return random.choice(self.moves)
 
 class WeightedLastMovesExpert(Expert):
     """
@@ -68,4 +68,4 @@ class WeightedLastMovesExpert(Expert):
         if len(history) > k:
             return random.choices(history[k:], weights=self.weights, k=1)[0]
         else:
-            return random.choice(history)
+            return random.choice(self.moves)
