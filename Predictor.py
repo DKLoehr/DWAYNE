@@ -2,6 +2,7 @@ from Game import Game
 from Player import Player
 import Experts
 import random
+import math
 
 class DeterministicPlayer(Player):
     def __init__(self, game, beta, experts):
@@ -11,14 +12,14 @@ class DeterministicPlayer(Player):
         self.weightedExperts = [(expert, 1) for expert in experts]
 
     def makeMove(self):
-        predictweights = {move : 0 for move in self.game.getMoves()}
-        moveweights = {move : 0 for move in self.game.getMoves()}
+        predictWeights = {move : 0 for move in self.game.getMoves()}
         for (expert, weight) in self.weightedExperts:
-            predictweights[expert.predict()] += weight
+            predictWeights[expert.predict()] += weight
+        expectedValue = {move : 0 for move in self.game.getMoves()}
         for move1 in self.game.getMoves():
             for move2 in self.game.getMoves():
-                moveweights[move1] += predictweights[move2] * self.game.testMoves(move1, move2)
-        return max(moveweights, key = lambda key : moveweights[key])
+                expectedValue[move1] += predictWeights[move2] * self.game.testMoves(move1, move2)
+        return max(expectedValue, key = lambda key : expectedValue[key])
 
     def observeMove(self, move):
         # Multiply weight by beta if the expert's prediction was wrong
@@ -39,14 +40,15 @@ class NondeterministicPlayer(Player):
         self.weightedExperts = [(expert, 1) for expert in experts]
 
     def makeMove(self):
-        predictweights = {move : 0 for move in self.game.getMoves()}
-        moveweights = {move : 0 for move in self.game.getMoves()}
+        predictWeights = {move : 0 for move in self.game.getMoves()}
         for (expert, weight) in self.weightedExperts:
-            predictweights[expert.predict()] += weight
+            predictWeights[expert.predict()] += weight
+        expectedValue = {move : 0 for move in self.game.getMoves()}
         for move1 in self.game.getMoves():
             for move2 in self.game.getMoves():
-                moveweights[move1] += predictweights[move2] * self.game.testMoves(move1, move2)
-        return random.choices(self.game.getMoves(), [moveweights[move] for move in self.game.getMoves], k=1)[0]
+                expectedValue[move1] += predictWeights[move2] * self.game.testMoves(move1, move2)
+        moveWeights = [math.exp(expectedValue[move]) for move in self.game.getMoves()]
+        return random.choices(self.game.getMoves(), moveWeights, k=1)[0]
 
     def observeMove(self, move):
         # Multiply weight by beta if the expert's prediction was wrong
@@ -62,37 +64,39 @@ class NondeterministicPlayer(Player):
 
 def main():
     RPSGame = Game()
-    RPSGame.loadFromJson("Games/rps.json")
-    #player = DeterministicPlayer(RPSGame, .5, \
-    #    [Experts.KthLastMoveExpert(RPSGame.getMoves(), k) for k in range(10)])
-    player = DeterministicPlayer(RPSGame, .5, \
-        [Experts.WeightedLastMovesExpert(RPSGame.getMoves(), [1, 1])])
+    RPSGame.loadFromJson("Games/rpsdk.json")
+    player1 = NondeterministicPlayer(RPSGame, .5, \
+        [Experts.KthLastMoveExpert(RPSGame.getMoves(), k) for k in range(4)])
+    player2 = NondeterministicPlayer(RPSGame, .5, \
+        [Experts.KthLastMoveExpert(RPSGame.getMoves(), k) for k in range(4)])
+    #player2 = DeterministicPlayer(RPSGame, .5, \
+    #    [Experts.WeightedLastMovesExpert(RPSGame.getMoves(), [1, 1])])
     #player = DeterministicPlayer(RPSGame, .5, \
     #    [Experts.ConstantExpert(RPSGame.getMoves(), move) for move in RPSGame.getMoves()])
     playerWins = 0
     pythonWins = 0
     ties = 0
-    while True:
-        pythonMove = player.makeMove()
-        playerMove = input("Make your move: ")
-        if playerMove == "exit": return
-        if playerMove not in RPSGame.getMoves():
-            print("Invalid move: " + playerMove)
-            continue
+    for i in range(1000):
+        pythonMove = player1.makeMove()
+        playerMove = player2.makeMove()
 
         if RPSGame.testMoves(pythonMove, playerMove) == 1:
             pythonWins += 1
-            successStr = "I win!"
+            #successStr = "I win!"
         elif RPSGame.testMoves(pythonMove, playerMove) == -1:
             playerWins += 1
-            successStr = "You win!"
+            #successStr = "You win!"
         else:
             ties += 1
-            successStr = "We tied!"
-        print("I made the move: " + pythonMove + ". " + successStr)
-        print("Me: {}   You : {}   Ties : {}".format(pythonWins, playerWins, ties))
-
-        player.observeMove(playerMove)
+            #successStr = "We tied!"
+        player1.observeMove(playerMove)
+        player2.observeMove(pythonMove)
+        #print("I made the move: " + pythonMove + ". " + successStr)
+        print("Me: {} ({}, {}) You : {} ({}, {}) Ties : {}".format(pythonWins,\
+            pythonMove, [weight for (expert, weight) in player1.weightedExperts],\
+            playerWins,\
+            playerMove, [weight for (expert, weight) in player2.weightedExperts],\
+            ties))
 
 if __name__ == "__main__":
     main()
