@@ -1,16 +1,19 @@
 from tkinter import *
 from tkinter import ttk
 from functools import partial
+from Game import Game
 
 COL_OFFSET = 0
 ROW_OFFSET = 1
 
 class ButtonGrid(object):
-    def __init__(self, frame, onPressExternal):
+    def __init__(self, frame, onPressExternal, onAdd, onDelete):
         self.buttons = {}
         self.moves = []
         self.frame = frame
         self.onPressExternal = onPressExternal
+        self.onAdd = onAdd
+        self.onDelete = onDelete
         self.rowLabels = {}
         self.colLabels = {}
 
@@ -70,6 +73,7 @@ class ButtonGrid(object):
         self.rowLabels[move] = ttk.Label(self.frame, text=move)
         self.colLabels[move] = ttk.Label(self.frame, text=move)
         self.regridAll()
+        self.onAdd(move)
 
     def deleteMove(self, move):
         if move not in self.moves: return
@@ -85,37 +89,59 @@ class ButtonGrid(object):
             self.deleteButton(move2, move)
 
         self.regridAll()
+        self.onDelete(move)
 
-root = Tk()
-root.title("DWAYNE")
+def main():
 
-mainframe = ttk.Frame(root)
-mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
-#mainframe.rowconfigure(0, weight=1)
-#mainframe.columnconfigure(0, weight=1)
-root.columnconfigure(0, weight=1)
-root.rowconfigure(0, weight=1)
+    root = Tk()
+    root.title("DWAYNE")
 
-def onPress(move1, move2, newVal):
-    print("{},{}:{}".format(move1, move2, newVal))
+    mainframe = ttk.Frame(root)
+    mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
+    root.columnconfigure(0, weight=1)
+    root.rowconfigure(0, weight=1)
 
-b = ButtonGrid(mainframe, onPress)
+    game = Game()
 
-activeMove = StringVar()
+    def onPress(move1, move2, newVal):
+        if newVal == "+":
+            game.addRelation(move1, move2)
+        elif newVal == "-":
+            game.addRelation(move2, move1)
+        else:
+            game.removeRelation(move1, move2)
+        print(game)
 
-def callAddMove():
-    b.addMove(activeMove.get())
+    b = ButtonGrid(mainframe, onPress, game.addMove, game.deleteMove)
 
-def callDelMove():
-    b.deleteMove(activeMove.get())
+    activeMove = StringVar()
 
-moveEntry = ttk.Entry(mainframe, width=10, textvariable=activeMove)
-addMoveButton = ttk.Button(mainframe, text="Add Move", command=callAddMove)
-delMoveButton = ttk.Button(mainframe, text="Delete Move", command=callDelMove)
+    def callAddMove():
+        move = activeMove.get()
+        if move == "": return
+        b.addMove(move)
+        activeMove.set("")
 
-moveEntry.grid(row=0, column=0, sticky=(N,W))
-addMoveButton.grid(row=0, column=1, sticky=(N))
-delMoveButton.grid(row=0, column=2, sticky=(N))
+    def callDelMove():
+        move = activeMove.get()
+        if move == "": return
+        b.deleteMove(move)
+        activeMove.set("")
+
+    moveEntry = ttk.Entry(mainframe, width=10, textvariable=activeMove)
+    addMoveButton = ttk.Button(mainframe, text="Add Move", command=callAddMove)
+    delMoveButton = ttk.Button(mainframe, text="Delete Move", command=callDelMove)
+
+    moveEntry.grid(row=0, column=0, sticky=(N,W))
+    addMoveButton.grid(row=0, column=1, sticky=(N))
+    delMoveButton.grid(row=0, column=2, sticky=(N))
+
+    #moveEntry.focus()
+    root.bind('<Return>', callAddMove())
+
+    root.mainloop()
 
 
-root.mainloop()
+
+if __name__ == "__main__":
+    main()
