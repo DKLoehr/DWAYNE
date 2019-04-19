@@ -66,13 +66,13 @@ class Game(object):
     def __str__(self):
         if len(self.moves) == 0: return "Empty Game"
         maxlen = max([len(move) for move in self.moves])
-        if maxlen % 2 == 0: maxlen += 1
+        if maxlen % 2 == 1: maxlen += 1
         pad_to_maxlen = lambda str : '{s: ^{n}}'.format(s=str,n=maxlen)
         beatsstr = pad_to_maxlen("") + " | ".join([pad_to_maxlen(move) for move in self.moves]) + "\n"
         for move1 in self.moves:
             move1_beats = [self.beats[move1, move2] for move2 in self.moves]
-            move1_beats_strs = ['{d: ^ {n}}'.format(d=beat,n=maxlen) for beat in move1_beats]
-            beatsstr += pad_to_maxlen(move1) + " | ".join([s for s in move1_beats_strs]) + "\n"
+            move1_beats_strs = [("+" if beat == 1 else "-" if beat == -1 else "0") for beat in move1_beats]
+            beatsstr += pad_to_maxlen(move1) + " | ".join([pad_to_maxlen(s) for s in move1_beats_strs]) + "\n"
         return beatsstr
 
     def saveToJson(self, filename):

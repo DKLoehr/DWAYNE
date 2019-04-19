@@ -1,4 +1,5 @@
 import random
+import itertools
 
 class Expert(object):
     """
@@ -69,6 +70,86 @@ class KthLastMoveExpert(Expert):
     def observeMove(self, move):
         self.history.append(move)
         if len(self.history) > self.k + 1:
+            self.history = self.history[1:]
+
+class DeterministicSequenceExpert(Expert):
+    """
+    An expert who looks at the last k moves, and
+    picks the move which was most often played
+    after that sequence
+    """
+
+    def movelistToKey(self, lst):
+        ret = ""
+        for move in lst:
+            ret += move + ","
+        return ret
+
+    def __init__(self, moves, k):
+        Expert.__init__(self, moves)
+        self.occurrences = {self.movelistToKey(moves) : 0 for moves in
+                            itertools.product(moves, repeat=k+1)}
+        self.k = k
+        print(self.occurrences, self.k)
+
+    def predict(self):
+        """
+        Return the k-th move from the end of the list.
+        If the list is less than size k, pick randomly.
+        """
+        if len(self.history) < self.k:
+            return self.moves[0]
+        maxMove = self.moves[0]
+        maxVal = 0
+        for move in self.moves:
+            print(len(self.history), self.k)
+            newVal = self.occurrences[self.movelistToKey(self.history + [move])]
+            if newVal > maxVal:
+                maxVal = newVal
+                maxMove = move
+        return maxMove
+
+    def observeMove(self, move):
+        self.history.append(move)
+        if len(self.history) == self.k + 1:
+            self.occurrences[self.movelistToKey(self.history)] += 1
+            self.history = self.history[1:]
+
+
+class NondeterministicSequenceExpert(Expert):
+    """
+    An expert who looks at the last k moves, and
+    picks the move which was most often played
+    after that sequence
+    """
+
+    def movelistToKey(self, lst):
+        ret = ""
+        for move in lst:
+            ret += move + ","
+        return ret
+
+    def __init__(self, moves, k):
+        Expert.__init__(self, moves)
+        self.occurrences = {self.movelistToKey(moves) : 0 for moves in
+                            itertools.product(moves, repeat=k+1)}
+        self.k = k
+
+    def predict(self):
+        """
+        Return the k-th move from the end of the list.
+        If the list is less than size k, pick randomly.
+        """
+        if len(self.history) < self.k:
+            return random.choice(self.moves)
+        weights = [self.occurrences[self.movelistToKey(self.history + [move])] for move in self.moves]
+        return random.choices(self.moves, weights=weights, k=1)[0]
+
+
+    def observeMove(self, move):
+        self.history.append(move)
+        if len(self.history) == self.k + 1:
+            self.occurrences[self.movelistToKey(self.history)] += 1
             self.history = self.history[1:]
 
 class WeightedLastMovesExpert(Expert):
