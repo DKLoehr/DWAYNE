@@ -2,6 +2,7 @@ from tkinter import *
 from tkinter import ttk
 from functools import partial
 from Game import Game
+from PremadeGames import loadRPS, loadRPSLS, loadRPSDK
 
 COL_OFFSET = 0
 ROW_OFFSET = 1
@@ -91,8 +92,51 @@ class ButtonGrid(object):
         self.regridAll()
         self.onDelete(move)
 
-def main():
+class SetupGUI(object):
+    def __init__(self, frame, game):
+        self.frame = frame
+        self.game = game
+        self.buttonGrid = ButtonGrid(frame, self.onPress, game.addMove, game.deleteMove)
+        self.activeMove = StringVar()
+        self.topBar = []
+        self.topBar.append(ttk.Entry(frame, width=10, textvariable=self.activeMove))
+        self.topBar.append(ttk.Button(frame, text="Add Move", command=self.callAddMove))
+        self.topBar.append(ttk.Button(frame, text="Delete Move", command=self.callDelMove))
+        self.topBar.append(ttk.Button(frame, text="Load RPS", command=partial(loadRPS, self.buttonGrid)))
+        self.topBar.append(ttk.Button(frame, text="Load RPSLS", command=partial(loadRPSLS, self.buttonGrid)))
+        self.topBar.append(ttk.Button(frame, text="Load RPSDK", command=partial(loadRPSDK, self.buttonGrid)))
+        self.show()
 
+    def show(self):
+        for i, elt in enumerate(self.topBar):
+            elt.grid(row=0, column=i, stick=N)
+
+    def hide(self):
+        for elt in self.topBar:
+            elt.grid_forget()
+
+    def onPress(self, move1, move2, newVal):
+        if newVal == "+":
+            self.game.addRelation(move1, move2)
+        elif newVal == "-":
+            self.game.addRelation(move2, move1)
+        else:
+            self.game.removeRelation(move1, move2)
+        #print(self.game)
+
+    def callAddMove(self):
+        move = self.activeMove.get()
+        if move == "": return
+        self.buttonGrid.addMove(move)
+        self.activeMove.set("")
+
+    def callDelMove(self):
+        move = self.activeMove.get()
+        if move == "": return
+        self.buttonGrid.deleteMove(move)
+        self.activeMove.set("")
+
+def main():
     root = Tk()
     root.title("DWAYNE")
 
@@ -103,41 +147,7 @@ def main():
 
     game = Game()
 
-    def onPress(move1, move2, newVal):
-        if newVal == "+":
-            game.addRelation(move1, move2)
-        elif newVal == "-":
-            game.addRelation(move2, move1)
-        else:
-            game.removeRelation(move1, move2)
-        print(game)
-
-    b = ButtonGrid(mainframe, onPress, game.addMove, game.deleteMove)
-
-    activeMove = StringVar()
-
-    def callAddMove():
-        move = activeMove.get()
-        if move == "": return
-        b.addMove(move)
-        activeMove.set("")
-
-    def callDelMove():
-        move = activeMove.get()
-        if move == "": return
-        b.deleteMove(move)
-        activeMove.set("")
-
-    moveEntry = ttk.Entry(mainframe, width=10, textvariable=activeMove)
-    addMoveButton = ttk.Button(mainframe, text="Add Move", command=callAddMove)
-    delMoveButton = ttk.Button(mainframe, text="Delete Move", command=callDelMove)
-
-    moveEntry.grid(row=0, column=0, sticky=(N,W))
-    addMoveButton.grid(row=0, column=1, sticky=(N))
-    delMoveButton.grid(row=0, column=2, sticky=(N))
-
-    #moveEntry.focus()
-    root.bind('<Return>', callAddMove())
+    GUI = SetupGUI(mainframe, game)
 
     root.mainloop()
 
