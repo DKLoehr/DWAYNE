@@ -3,9 +3,13 @@ from tkinter import ttk
 from functools import partial
 from Game import Game
 from PremadeGames import loadRPS, loadRPSLS, loadRPSDK
+import Predictor
+import Experts
+
+flatten = lambda z: [x for y in z for x in y]
 
 COL_OFFSET = 0
-ROW_OFFSET = 1
+ROW_OFFSET = 2
 
 class ButtonGrid(object):
     def __init__(self, frame, onPressExternal, onAdd, onDelete):
@@ -101,13 +105,58 @@ class ButtonGrid(object):
             button["state"] = DISABLED
 
 class PlayGUI(object):
-    def __init__(self, root, game, onFinish):
-        self.game = game
+    def __init__(self, root, moves, game, onFinish, predictorConstructor):
+        self.moves = moves
+        self.beats = game.testMoves
         self.frame = ttk.Frame(root)
         self.onFinish = onFinish
+        self.predictor = predictorConstructor(game)
 
-        self.button = ttk.Button(self.frame, text="Done", command=self.onFinish)
-        self.button.grid(row=0, column = 1, stick=N)
+        self.playerScore = 0
+        self.pythonScore = 0
+        self.ties = 0
+
+        self.playerScoreStr = StringVar()
+        self.pythonScoreStr = StringVar()
+        self.tiesStr = StringVar()
+
+        self.playerScoreStr.set(self.playerScore)
+        self.pythonScoreStr.set(self.pythonScore)
+        self.tiesStr.set(self.ties)
+
+        self.topBar = []
+        self.topBar.append(ttk.Label(self.frame, text="         You: ", foreground="blue"))
+        self.topBar.append(ttk.Label(self.frame, width=3, textvariable=self.playerScoreStr, foreground="blue"))
+        self.topBar.append(ttk.Label(self.frame, text="     Ties: ", foreground="green"))
+        self.topBar.append(ttk.Label(self.frame, width=3, textvariable=self.tiesStr, foreground="green"))
+        self.topBar.append(ttk.Label(self.frame, text="     DWAYNE: ", foreground="red"))
+        self.topBar.append(ttk.Label(self.frame, width=3, textvariable=self.pythonScoreStr, foreground="red"))
+        self.topBar.append(ttk.Button(self.frame, text="Forfeit", command=self.onFinish))
+
+        # Dummy label to take up space in row 2
+        ttk.Label(self.frame, text = "").grid(row=2, column=1)
+
+        self.movesBar = [ttk.Button(self.frame, text=move, command=partial(self.processMove, move)) for move in self.moves]
+
+        for i, elt in enumerate(self.topBar):
+            elt.grid(row=0, column=i, stick=N)
+        for i, elt in enumerate(self.movesBar):
+            elt.grid(row=2, column=i, stick=N)
+
+    def processMove(self, move1):
+        move2 = self.predictor.makeMove()
+        self.predictor.observeMove(move1)
+        beats = self.beats(move1, move2)
+        if beats == 1:
+            self.playerScore += 1
+            self.playerScoreStr.set(self.playerScore)
+        elif beats == -1:
+            self.pythonScore += 1
+            self.pythonScoreStr.set(self.pythonScore)
+        else:
+            self.ties += 1
+            self.tiesStr.set(self.ties)
+        # TODO: End the game at an appropriate score
 
     def show(self):
         self.frame.grid(column=1, row=0, sticky=(N, W, E, S))
@@ -116,33 +165,35 @@ class PlayGUI(object):
         self.frame.grid_forget()
 
 class SetupGUI(object):
-    def __init__(self, root, game):
+    def __init__(self, root, game, predictorConstructor):
         self.root = root
         self.game = game
+        self.predictorConstructor = predictorConstructor
         self.frame = ttk.Frame(root)
         self.buttonGrid = ButtonGrid(self.frame, self.onPress, game.addMove, game.deleteMove)
         self.activeMove = StringVar()
-        self.topBar = []
-        self.topBar.append(ttk.Entry(self.frame, width=10, textvariable=self.activeMove))
-        self.topBar.append(ttk.Button(self.frame, text="Add Move", command=self.callAddMove))
-        self.topBar.append(ttk.Button(self.frame, text="Delete Move", command=self.callDelMove))
-        self.topBar.append(ttk.Button(self.frame, text="Play!", command = self.startGame))
-        self.topBar.append(ttk.Button(self.frame, text="Load RPS", command=partial(loadRPS, self.buttonGrid)))
-        self.topBar.append(ttk.Button(self.frame, text="Load RPSLS", command=partial(loadRPSLS, self.buttonGrid)))
-        self.topBar.append(ttk.Button(self.frame, text="Load RPSDK", command=partial(loadRPSDK, self.buttonGrid)))
-        for i, elt in enumerate(self.topBar):
-            elt.grid(row=0, column=i, stick=N)
+        self.topBar = [[], []]
+        self.topBar[0].append(ttk.Entry(self.frame, width=10, textvariable=self.activeMove))
+        self.topBar[0].append(ttk.Button(self.frame, text="Add Move", command=self.callAddMove))
+        self.topBar[0].append(ttk.Button(self.frame, text="Delete Move", command=self.callDelMove))
+        self.topBar[0].append(ttk.Button(self.frame, text="Play!", command = self.startGame))
+        self.topBar[1].append(ttk.Button(self.frame, text="Load RPS", command=partial(loadRPS, self.buttonGrid)))
+        self.topBar[1].append(ttk.Button(self.frame, text="Load RPSLS", command=partial(loadRPSLS, self.buttonGrid)))
+        self.topBar[1].append(ttk.Button(self.frame, text="Load RPSDK", command=partial(loadRPSDK, self.buttonGrid)))
+        for i, bar in enumerate(self.topBar):
+            for j, elt in enumerate(bar):
+                elt.grid(row=i, column=j, stick=N)
 
     def startGame(self):
         self.buttonGrid.deactivate()
-        for elt in self.topBar:
+        for elt in flatten(self.topBar):
             elt["state"] = DISABLED
-        self.playGUI = PlayGUI(self.root, self.game, self.endGame)
+        self.playGUI = PlayGUI(self.root, self.buttonGrid.moves, self.game, self.endGame, self.predictorConstructor)
         self.playGUI.show()
 
     def endGame(self):
         self.buttonGrid.activate()
-        for elt in self.topBar:
+        for elt in flatten(self.topBar):
             elt["state"] = NORMAL
         self.playGUI.hide()
 
@@ -187,7 +238,10 @@ def main():
 
     game = Game()
 
-    GUI = SetupGUI(root, game)
+    makePredictor = lambda game : Predictor.NondeterministicPlayer(game, .5, \
+          [Experts.NondeterministicSequenceExpert(game.getMoves(), k) for k in range(5)])
+
+    GUI = SetupGUI(root, game, makePredictor)
     GUI.show()
 
     root.mainloop()
