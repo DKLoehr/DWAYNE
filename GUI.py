@@ -92,28 +92,70 @@ class ButtonGrid(object):
         self.regridAll()
         self.onDelete(move)
 
-class SetupGUI(object):
-    def __init__(self, frame, game):
-        self.frame = frame
+    def activate(self):
+        for _, button in self.buttons.items():
+            button["state"] = NORMAL
+
+    def deactivate(self):
+        for _, button in self.buttons.items():
+            button["state"] = DISABLED
+
+class PlayGUI(object):
+    def __init__(self, root, game, onFinish):
         self.game = game
-        self.buttonGrid = ButtonGrid(frame, self.onPress, game.addMove, game.deleteMove)
-        self.activeMove = StringVar()
-        self.topBar = []
-        self.topBar.append(ttk.Entry(frame, width=10, textvariable=self.activeMove))
-        self.topBar.append(ttk.Button(frame, text="Add Move", command=self.callAddMove))
-        self.topBar.append(ttk.Button(frame, text="Delete Move", command=self.callDelMove))
-        self.topBar.append(ttk.Button(frame, text="Load RPS", command=partial(loadRPS, self.buttonGrid)))
-        self.topBar.append(ttk.Button(frame, text="Load RPSLS", command=partial(loadRPSLS, self.buttonGrid)))
-        self.topBar.append(ttk.Button(frame, text="Load RPSDK", command=partial(loadRPSDK, self.buttonGrid)))
-        self.show()
+        self.frame = ttk.Frame(root)
+        self.onFinish = onFinish
+
+        self.button = ttk.Button(self.frame, text="Done", command=self.onFinish)
+        self.button.grid(row=0, column = 1, stick=N)
 
     def show(self):
+        self.frame.grid(column=1, row=0, sticky=(N, W, E, S))
+
+    def hide(self):
+        self.frame.grid_forget()
+
+class SetupGUI(object):
+    def __init__(self, root, game):
+        self.root = root
+        self.game = game
+        self.frame = ttk.Frame(root)
+        self.buttonGrid = ButtonGrid(self.frame, self.onPress, game.addMove, game.deleteMove)
+        self.activeMove = StringVar()
+        self.topBar = []
+        self.topBar.append(ttk.Entry(self.frame, width=10, textvariable=self.activeMove))
+        self.topBar.append(ttk.Button(self.frame, text="Add Move", command=self.callAddMove))
+        self.topBar.append(ttk.Button(self.frame, text="Delete Move", command=self.callDelMove))
+        self.topBar.append(ttk.Button(self.frame, text="Play!", command = self.startGame))
+        self.topBar.append(ttk.Button(self.frame, text="Load RPS", command=partial(loadRPS, self.buttonGrid)))
+        self.topBar.append(ttk.Button(self.frame, text="Load RPSLS", command=partial(loadRPSLS, self.buttonGrid)))
+        self.topBar.append(ttk.Button(self.frame, text="Load RPSDK", command=partial(loadRPSDK, self.buttonGrid)))
         for i, elt in enumerate(self.topBar):
             elt.grid(row=0, column=i, stick=N)
 
-    def hide(self):
+    def startGame(self):
+        self.buttonGrid.deactivate()
         for elt in self.topBar:
-            elt.grid_forget()
+            elt["state"] = DISABLED
+        self.playGUI = PlayGUI(self.root, self.game, self.endGame)
+        self.playGUI.show()
+
+    def endGame(self):
+        self.buttonGrid.activate()
+        for elt in self.topBar:
+            elt["state"] = NORMAL
+        self.playGUI.hide()
+
+    def show(self):
+        self.frame.grid(column=0, row=0, sticky=(N, W, E, S))
+
+    def hide(self):
+        self.frame.grid_forget()
+
+    def addPlayCommand(self, command):
+        self.topBar[3]["command"] = command
+
+    # Interal Functions
 
     def onPress(self, move1, move2, newVal):
         if newVal == "+":
@@ -140,14 +182,13 @@ def main():
     root = Tk()
     root.title("DWAYNE")
 
-    mainframe = ttk.Frame(root)
-    mainframe.grid(column=0, row=0, sticky=(N, W, E, S))
     root.columnconfigure(0, weight=1)
     root.rowconfigure(0, weight=1)
 
     game = Game()
 
-    GUI = SetupGUI(mainframe, game)
+    GUI = SetupGUI(root, game)
+    GUI.show()
 
     root.mainloop()
 
