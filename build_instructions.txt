@@ -1,0 +1,8 @@
+taken from https://github.com/pyinstaller/pyinstaller/issues/3753
+
+pyinstaller --windowed GUI.py
+cd dist/GUI.app/Contents/MacOs
+mkdir tcl tk
+cp -R /Library/Frameworks/Python.framework/Versions/3.7/lib/tcl* tcl/
+cp -R /Library/Frameworks/Python.framework/Versions/3.7/lib/tk* tk/
+cp -R /Library/Frameworks/Python.framework/Versions/3.7/lib/Tk* tk/ 

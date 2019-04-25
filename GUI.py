@@ -1,6 +1,7 @@
 from tkinter import *
 from tkinter import ttk
 from functools import partial
+from math import sqrt, ceil
 from Game import Game
 from PremadeGames import loadRPS, loadRPSLS, loadRPSDK
 import Predictor
@@ -119,43 +120,73 @@ class PlayGUI(object):
         self.playerScoreStr = StringVar()
         self.pythonScoreStr = StringVar()
         self.tiesStr = StringVar()
+        self.playerMoveStr = StringVar()
+        self.pythonMoveStr = StringVar()
+        self.roundWinStr = StringVar()
+        self.roundWinStr.set("asdsa")
 
         self.playerScoreStr.set(self.playerScore)
         self.pythonScoreStr.set(self.pythonScore)
         self.tiesStr.set(self.ties)
 
         self.topBar = []
-        self.topBar.append(ttk.Label(self.frame, text="         You: ", foreground="blue"))
+        self.topBar.append(ttk.Label(self.frame, text="You: ", foreground="blue"))
         self.topBar.append(ttk.Label(self.frame, width=3, textvariable=self.playerScoreStr, foreground="blue"))
-        self.topBar.append(ttk.Label(self.frame, text="     Ties: ", foreground="green"))
+        self.topBar.append(ttk.Label(self.frame, text="Ties: ", foreground="green"))
         self.topBar.append(ttk.Label(self.frame, width=3, textvariable=self.tiesStr, foreground="green"))
-        self.topBar.append(ttk.Label(self.frame, text="     DWAYNE: ", foreground="red"))
+        self.topBar.append(ttk.Label(self.frame, text="DWAYNE: ", foreground="red"))
         self.topBar.append(ttk.Label(self.frame, width=3, textvariable=self.pythonScoreStr, foreground="red"))
         self.topBar.append(ttk.Button(self.frame, text="Forfeit", command=self.onFinish))
 
         # Dummy label to take up space in row 2
-        ttk.Label(self.frame, text = "").grid(row=2, column=1)
+        #ttk.Label(self.frame, text = "").grid(row=2, column=1)
+        self.secondBar = []
+        self.secondBar.append(ttk.Label(self.frame, text="You played: ", foreground="blue"))
+        self.secondBar.append(ttk.Label(self.frame, width=1+max([len(move) for move in moves]), \
+                                        textvariable=self.playerMoveStr, foreground="blue"))
 
-        self.movesBar = [ttk.Button(self.frame, text=move, command=partial(self.processMove, move)) for move in self.moves]
+        self.roundWinLabel = ttk.Label(self.frame, textvariable = self.roundWinStr)
+        self.secondBar.append(self.roundWinLabel)
+        self.secondBar.append(ttk.Label(self.frame)) # Dummy label to take up space
 
-        for i, elt in enumerate(self.topBar):
-            elt.grid(row=0, column=i, stick=N)
-        for i, elt in enumerate(self.movesBar):
-            elt.grid(row=2, column=i, stick=N)
+        self.secondBar.append(ttk.Label(self.frame, text="DWAYNE played: ", foreground="red"))
+        self.secondBar.append(ttk.Label(self.frame, width=1+max([len(move) for move in moves]), \
+                                        textvariable=self.pythonMoveStr, foreground="red"))
+
+        self.moveButtons = [ttk.Button(self.frame, text=move, command=partial(self.processMove, move)) for move in self.moves]
+        self.movesBar = []
+
+        # Make buttons as close to a square as we can get
+        sq = max(3, ceil(sqrt(len(self.moveButtons))))
+        print(sq)
+        self.moveBars = [self.moveButtons[sq*i:sq*(i+1)] for i in range(sq)]
+
+        allBars = [self.topBar, self.secondBar] + self.moveBars
+        for i, bar in enumerate(allBars):
+            for j, elt in enumerate(bar):
+                elt.grid(row=i, column=j, stick=N)
 
     def processMove(self, move1):
         move2 = self.predictor.makeMove()
         self.predictor.observeMove(move1)
+        self.playerMoveStr.set(move1)
+        self.pythonMoveStr.set(move2)
         beats = self.beats(move1, move2)
         if beats == 1:
             self.playerScore += 1
             self.playerScoreStr.set(self.playerScore)
+            self.roundWinStr.set("You won!")
+            self.roundWinLabel["foreground"] = "blue"
         elif beats == -1:
             self.pythonScore += 1
             self.pythonScoreStr.set(self.pythonScore)
+            self.roundWinStr.set("DWAYNE won!")
+            self.roundWinLabel["foreground"] = "red"
         else:
             self.ties += 1
             self.tiesStr.set(self.ties)
+            self.roundWinStr.set("You tied!")
+            self.roundWinLabel["foreground"] = "green"
         # TODO: End the game at an appropriate score
 
     def show(self):
