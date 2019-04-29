@@ -90,7 +90,7 @@ class DeterministicSequenceExpert(Expert):
         self.occurrences = {self.movelistToKey(moves) : 0 for moves in
                             itertools.product(moves, repeat=k+1)}
         self.k = k
-        print(self.occurrences, self.k)
+        #print(self.occurrences, self.k)
 
     def predict(self):
         """
@@ -102,7 +102,7 @@ class DeterministicSequenceExpert(Expert):
         maxMove = self.moves[0]
         maxVal = 0
         for move in self.moves:
-            print(len(self.history), self.k)
+            #print(len(self.history), self.k)
             newVal = self.occurrences[self.movelistToKey(self.history + [move])]
             if newVal > maxVal:
                 maxVal = newVal

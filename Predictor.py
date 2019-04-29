@@ -6,10 +6,8 @@ import math
 
 class DeterministicPlayer(Player):
     def __init__(self, game, beta, experts):
-        print("sadas")
         assert(0 < beta < 1)
         Player.__init__(self, game)
-        print("lkk")
         self.beta = beta
         self.weightedExperts = [(expert, 1) for expert in experts]
 
@@ -112,11 +110,11 @@ def playAgainstSelf(G, player1, player2, numRounds):
             ties += 1
         player1.observeMove(playerMove)
         player2.observeMove(pythonMove)
-        print("Me: {} ({}, {}) You : {} ({}, {}) Ties : {}".format(pythonWins,\
-            pythonMove, [weight for (expert, weight) in player1.weightedExperts],\
-            playerWins,\
-            playerMove, [weight for (expert, weight) in player2.weightedExperts],\
-            ties))
+    print("Me: {} ({}, {}) You : {} ({}, {}) Ties : {}".format(pythonWins,\
+        pythonMove, [weight for (expert, weight) in player1.weightedExperts],\
+        playerWins,\
+        playerMove, [weight for (expert, weight) in player2.weightedExperts],\
+        ties))
     print (count1)
     print (count2)
 
@@ -129,13 +127,15 @@ def main():
     #    [Experts.KthLastMoveExpert(RPSGame.getMoves(), k) for k in range(4)])
     #player2 = DeterministicPlayer(RPSGame, .5, \
     #    [Experts.WeightedLastMovesExpert(RPSGame.getMoves(), [1, 1])])
-    #player = DeterministicPlayer(RPSGame, .5, \
-    #    [Experts.ConstantExpert(RPSGame.getMoves(), move) for move in RPSGame.getMoves()])
     player1 = NondeterministicPlayer(RPSGame, .5, \
-          [Experts.NondeterministicSequenceExpert(RPSGame.getMoves(), k) for k in range(5)])
+        [Experts.NondeterministicSequenceExpert(RPSGame.getMoves(), k) for k in range(5)])
     player2 = NondeterministicPlayer(RPSGame, .5, \
-          [Experts.NondeterministicSequenceExpert(RPSGame.getMoves(), k) for k in range(5)])
-    playAgainstSelf(RPSGame, player1, player2, 1000)
+        [Experts.NondeterministicSequenceExpert(RPSGame.getMoves(), k) for k in range(5)])
+    #player1 = NondeterministicPlayer(RPSGame, .5, \
+    #      [Experts.NondeterministicSequenceExpert(RPSGame.getMoves(), k) for k in range(5)])
+    #player2 = NondeterministicPlayer(RPSGame, .5, \
+    #      [Experts.NondeterministicSequenceExpert(RPSGame.getMoves(), k) for k in range(5)])
+    playAgainstSelf(RPSGame, player1, player2, 100000)
     #playAgainstUser(RPSGame, player1)
 
 if __name__ == "__main__":

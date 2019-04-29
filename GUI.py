@@ -158,7 +158,7 @@ class PlayGUI(object):
 
         # Make buttons as close to a square as we can get
         sq = max(3, ceil(sqrt(len(self.moveButtons))))
-        print(sq)
+        #print(sq)
         self.moveBars = [self.moveButtons[sq*i:sq*(i+1)] for i in range(sq)]
 
         allBars = [self.topBar, self.secondBar] + self.moveBars
