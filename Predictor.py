@@ -47,8 +47,11 @@ class NondeterministicPlayer(Player):
         for move1 in self.game.getMoves():
             for move2 in self.game.getMoves():
                 expectedValue[move1] += predictWeights[move2] * self.game.testMoves(move1, move2)
-        moveWeights = [math.exp(expectedValue[move]) for move in self.game.getMoves()]
-        return random.choices(self.game.getMoves(), moveWeights, k=1)[0]
+        experts, weights = zip(*self.weightedExperts)
+        chosenMove = random.choices(experts, weights, k=1)[0].predict()
+        possiblePlays = [move for move in self.game.getMoves() if not self.game.testMoves(move, chosenMove)]
+        moveWeights = [math.exp(expectedValue[move]) for move in possiblePlays]
+        return random.choices(possiblePlays, moveWeights, k=1)[0]
 
     def observeMove(self, move):
         # Multiply weight by beta if the expert's prediction was wrong
@@ -121,6 +124,13 @@ def playAgainstSelf(G, player1, player2, numRounds):
 def main():
     RPSGame = Game()
     RPSGame.loadFromJson("Games/rpsdk.json")
+    RPSGame.addMove("four")
+    #RPSGame.removeRelation("scissors", "paper")
+    #RPSGame.addRelation("scissors", "four")
+    #RPSGame.addRelation("four", "paper")
+    RPSGame.removeRelation("knight", "dragon")
+    RPSGame.addRelation("knight", "four")
+    RPSGame.addRelation("four", "dragon")
     #player1 = NondeterministicPlayer(RPSGame, .5, \
     #    [Experts.KthLastMoveExpert(RPSGame.getMoves(), k) for k in range(4)])
     #player2 = NondeterministicPlayer(RPSGame, .5, \
